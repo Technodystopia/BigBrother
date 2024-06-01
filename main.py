@@ -41,9 +41,8 @@ def load_reference_images():
     
     # Load your reference images and generate encodings here
     # Example:
-    # image = cv2.imread('reference_image.jpg')
-    # rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # encodings = face_recognition.face_encodings(rgb_image)[0]
+    # image = face_recognition.load_image_file('reference_image.jpg')
+    # encodings = face_recognition.face_encodings(image)[0]
     # known_face_encodings.append(encodings)
     # known_face_names.append("Person Name")
     
@@ -67,14 +66,15 @@ def capture_and_detect():
     GPIO.output(LED_PIN, GPIO.LOW)
     
     # Load the captured image
-    image = cv2.imread(image_path)
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = face_recognition.load_image_file(image_path)
     
     # Detect faces in the image
-    face_locations = face_recognition.face_locations(rgb_image)
-    face_encodings = face_recognition.face_encodings(rgb_image, face_locations)
+    face_locations = face_recognition.face_locations(image)
+    face_encodings = face_recognition.face_encodings(image, face_locations)
     
-    for face_encoding in face_encodings:
+    annotated_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    
+    for face_encoding, (top, right, bottom, left) in zip(face_encodings, face_locations):
         matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
         name = "Unknown"
         
@@ -83,12 +83,11 @@ def capture_and_detect():
             name = known_face_names[first_match_index]
         
         # Annotate image with the name
-        for (top, right, bottom, left) in face_locations:
-            cv2.rectangle(image, (left, top), (right, bottom), (0, 0, 255), 2)
-            cv2.putText(image, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
+        cv2.rectangle(annotated_image, (left, top), (right, bottom), (0, 0, 255), 2)
+        cv2.putText(annotated_image, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
         
         # Save the annotated image
-        cv2.imwrite(image_path, image)
+        cv2.imwrite(image_path, annotated_image)
         
         # Send image to Telegram
         bot.sendPhoto(TELEGRAM_CHAT_ID, photo=open(image_path, 'rb'), caption=name)
