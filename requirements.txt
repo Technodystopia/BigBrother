@@ -1,0 +1,6 @@
+picamera
+opencv-python o
+pencv-python-headless 
+telepot
+pyttsx3
+RPi.GPIO
